@@ -6,7 +6,30 @@ import { and, asc, desc, eq, ne } from "drizzle-orm";
 import { cacheLife, cacheTag } from "next/cache";
 import { db } from "@/db";
 import { categories, products, productStock } from "@/db/catalog-schema";
-import type { Category, Product } from "./catalog";
+import type { Category, ImageAsset, Product } from "./catalog";
+
+/** Slugs are lowercase words joined by single hyphens. */
+const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const MAX_SLUG_LENGTH = 80;
+
+/**
+ * Rejects anything that can't be a real slug before it reaches the database
+ * or becomes a cache key, so arbitrary URLs can't drive DB load or cache churn.
+ */
+export function isValidSlug(slug: string) {
+  return slug.length <= MAX_SLUG_LENGTH && SLUG_PATTERN.test(slug);
+}
+
+/** Must match images.remotePatterns in next.config.ts. */
+const ALLOWED_IMAGE_PREFIX = "https://images.unsplash.com/photo-";
+const PLACEHOLDER_IMAGE = "/placeholder-product.svg";
+
+/** Drops images next/image would refuse, so bad data can't crash a page. */
+function safeImages(images: ImageAsset[] | null | undefined): ImageAsset[] {
+  return (images ?? []).filter(
+    (img) => typeof img?.src === "string" && img.src.startsWith(ALLOWED_IMAGE_PREFIX),
+  );
+}
 
 /** Every product read loads its category and its stock rows in display order. */
 const withRelations = {
@@ -20,7 +43,7 @@ const typedProductQuery = () => db.query.products.findFirst({ with: withRelation
 type ProductRow = NonNullable<Awaited<ReturnType<typeof typedProductQuery>>>;
 
 function toProduct(row: ProductRow): Product {
-  const [image, ...gallery] = row.images;
+  const [image, ...gallery] = safeImages(row.images);
   return {
     slug: row.slug,
     name: row.name,
@@ -33,7 +56,7 @@ function toProduct(row: ProductRow): Product {
     details: row.details,
     composition: row.composition,
     sizes: row.stock.map((s) => ({ label: s.size, stock: s.quantity })),
-    image: image ?? { src: "", alt: row.name },
+    image: image ?? { src: PLACEHOLDER_IMAGE, alt: row.name },
     gallery,
     isNew: row.isNew,
   };
@@ -43,6 +66,8 @@ export async function getProduct(slug: string): Promise<Product | undefined> {
   "use cache";
   cacheLife("hours");
   cacheTag("products", `product:${slug}`);
+
+  if (!isValidSlug(slug)) return undefined;
 
   const row = await db.query.products.findFirst({
     where: eq(products.slug, slug),
@@ -77,6 +102,8 @@ export async function getProductsByCategory(categorySlug: string, limit?: number
   cacheLife("hours");
   cacheTag("products", "categories");
 
+  if (!isValidSlug(categorySlug)) return [];
+
   const category = await db.query.categories.findFirst({
     where: eq(categories.slug, categorySlug),
     columns: { id: true },
@@ -97,6 +124,8 @@ export async function getRelatedProducts(slug: string, limit = 4): Promise<Produ
   "use cache";
   cacheLife("hours");
   cacheTag("products");
+
+  if (!isValidSlug(slug)) return [];
 
   const current = await db.query.products.findFirst({
     where: eq(products.slug, slug),
@@ -130,10 +159,8 @@ export async function getFeaturedCategories(): Promise<Category[]> {
     where: eq(categories.featured, true),
     orderBy: [asc(categories.position)],
   });
-  return rows.map((row) => ({
-    slug: row.slug,
-    name: row.name,
-    description: row.description,
-    image: row.imageUrl ? { src: row.imageUrl, alt: row.imageAlt ?? row.name } : null,
-  }));
+  return rows.map((row) => {
+    const [image] = safeImages(row.imageUrl ? [{ src: row.imageUrl, alt: row.imageAlt ?? row.name }] : []);
+    return { slug: row.slug, name: row.name, description: row.description, image: image ?? null };
+  });
 }

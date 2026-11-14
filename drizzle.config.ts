@@ -8,6 +8,8 @@ export default defineConfig({
   out: "./drizzle",
   dialect: "postgresql",
   dbCredentials: {
-    url: process.env.DATABASE_URL!,
+    // Migrations need DDL rights: prefer the admin/owner connection so the
+    // app's DATABASE_URL can be a least-privilege role.
+    url: (process.env.DATABASE_URL_ADMIN ?? process.env.DATABASE_URL)!,
   },
 });
