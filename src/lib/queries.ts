@@ -62,6 +62,11 @@ function toProduct(row: ProductRow): Product {
   };
 }
 
+function toCategory(row: typeof categories.$inferSelect): Category {
+  const [image] = safeImages(row.imageUrl ? [{ src: row.imageUrl, alt: row.imageAlt ?? row.name }] : []);
+  return { slug: row.slug, name: row.name, description: row.description, image: image ?? null };
+}
+
 export async function getProduct(slug: string): Promise<Product | undefined> {
   "use cache";
   cacheLife("hours");
@@ -159,8 +164,24 @@ export async function getFeaturedCategories(): Promise<Category[]> {
     where: eq(categories.featured, true),
     orderBy: [asc(categories.position)],
   });
-  return rows.map((row) => {
-    const [image] = safeImages(row.imageUrl ? [{ src: row.imageUrl, alt: row.imageAlt ?? row.name }] : []);
-    return { slug: row.slug, name: row.name, description: row.description, image: image ?? null };
-  });
+  return rows.map(toCategory);
+}
+
+export async function getCategory(slug: string): Promise<Category | undefined> {
+  "use cache";
+  cacheLife("hours");
+  cacheTag("categories");
+
+  if (!isValidSlug(slug)) return undefined;
+
+  const row = await db.query.categories.findFirst({ where: eq(categories.slug, slug) });
+  return row ? toCategory(row) : undefined;
+}
+
+export async function getCategorySlugs(): Promise<{ slug: string }[]> {
+  "use cache";
+  cacheLife("hours");
+  cacheTag("categories");
+
+  return db.select({ slug: categories.slug }).from(categories).orderBy(asc(categories.position));
 }
