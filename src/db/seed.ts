@@ -1,12 +1,42 @@
-// Loads the sample catalog into the database. Safe to re-run: categories and
-// products are upserted by slug and each product's stock rows are replaced.
-// Run with: npm run db:seed
+// Loads the SAMPLE catalog into the database. Idempotent, but DESTRUCTIVE for
+// seeded products: matching rows are overwritten and their stock rows replaced.
+// Never run it against a database holding real products or stock.
+// Run with: npm run db:seed  (non-interactive: ALLOW_SEED=1 npm run db:seed)
+import { createInterface } from "node:readline/promises";
+import { neon } from "@neondatabase/serverless";
 import { inArray, sql } from "drizzle-orm";
-import { db } from "./index";
+import { drizzle } from "drizzle-orm/neon-http";
+import * as catalogSchema from "./catalog-schema";
 import { categories, products, productStock } from "./catalog-schema";
 import { seedCategories, seedProducts } from "./seed-data";
 
+// Writes use the admin connection when configured, so the app's DATABASE_URL
+// can be a least-privilege role.
+const url = process.env.DATABASE_URL_ADMIN ?? process.env.DATABASE_URL;
+if (!url) throw new Error("Set DATABASE_URL_ADMIN or DATABASE_URL to seed.");
+const db = drizzle(neon(url), { schema: catalogSchema });
+
+async function confirmSeed() {
+  if (process.env.NODE_ENV === "production" || process.env.VERCEL_ENV === "production") {
+    throw new Error("Refusing to seed in a production environment.");
+  }
+  const host = new URL(url!).host;
+  if (process.env.ALLOW_SEED === "1") return;
+  if (!process.stdin.isTTY) {
+    throw new Error("Refusing to seed non-interactively. Set ALLOW_SEED=1 to confirm.");
+  }
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  const answer = await rl.question(
+    `This overwrites sample products and their stock on ${host}.
+Type "seed" to continue: `,
+  );
+  rl.close();
+  if (answer.trim() !== "seed") throw new Error("Seed cancelled.");
+}
+
 async function seed() {
+  await confirmSeed();
+
   // 1. Categories
   await db
     .insert(categories)

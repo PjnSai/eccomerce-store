@@ -11,13 +11,13 @@
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
-    "auth:generate": "npx @better-auth/cli generate --config src/lib/auth.ts --output src/db/schema.ts",
+    "auth:generate": "auth generate --config src/lib/auth.ts --output src/db/schema.ts",
     "typecheck": "tsc --noEmit",
     "db:seed": "tsx --env-file=.env.local src/db/seed.ts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.2.0",
-    "better-auth": "^1.7.18",
+    "better-auth": "^1.7.23",
     "drizzle-orm": "^0.45.4",
     "next": "16.4.5",
     "react": "19.3.0",
@@ -25,11 +25,11 @@
     "server-only": "^0.0.1"
   },
   "devDependencies": {
-    "@better-auth/cli": "^1.4.22",
     "@tailwindcss/turbopack": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "auth": "^1.7.23",
     "dotenv": "^18.0.9",
     "drizzle-kit": "^0.31.11",
     "eslint": "^9",

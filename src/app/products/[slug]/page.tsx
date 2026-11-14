@@ -6,7 +6,7 @@ import { ProductCard } from "@/components/product-card";
 import { ProductGallery } from "@/components/product/product-gallery";
 import { PurchasePanel } from "@/components/product/purchase-panel";
 import { formatPrice } from "@/lib/catalog";
-import { getProduct, getProductSlugs, getRelatedProducts } from "@/lib/queries";
+import { getProduct, getProductSlugs, getRelatedProducts, isValidSlug } from "@/lib/queries";
 
 // With Cache Components this must return at least one slug, so the database
 // has to be migrated and seeded before `npm run build`.
@@ -18,6 +18,8 @@ export async function generateMetadata({
   params,
 }: PageProps<"/products/[slug]">): Promise<Metadata> {
   const { slug } = await params;
+  // Check the format before the cached query so junk URLs never become cache keys.
+  if (!isValidSlug(slug)) return {};
   const product = await getProduct(slug);
   if (!product) return {};
   return {
@@ -29,6 +31,7 @@ export async function generateMetadata({
 
 export default async function ProductPage({ params }: PageProps<"/products/[slug]">) {
   const { slug } = await params;
+  if (!isValidSlug(slug)) notFound();
   const product = await getProduct(slug);
   if (!product) notFound();
 
