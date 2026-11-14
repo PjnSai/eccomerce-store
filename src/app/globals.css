@@ -1,26 +1,562 @@
 @import "tailwindcss";
 
+/* ==========================================================================
+   Design system — quiet luxury
+   One grotesk family at a single weight, small sentence-case type,
+   warm near-black on white, hairline greys, square corners, imagery first.
+   ========================================================================== */
+
+/* ---- Raw tokens ---------------------------------------------------------- */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Color */
+  --ink: #1c1b1b; /* text, headings, primary buttons (warm near-black) */
+  --ink-soft: #3a3838; /* pressed/hover ink */
+  --paper: #ffffff; /* page, header, footer background */
+  --surface: #f6f5f3; /* image wells, skeletons */
+  --muted: #6a6a6a; /* secondary text, links at rest, footer text */
+  --subtle: #a8a6a3; /* placeholders, disabled */
+  --line: #dddddd; /* dividers, header/footer rules */
+  --line-soft: #ececec; /* low-emphasis rules inside panels */
+  --line-field: #d8d7d5; /* input underline */
+  --sale: #d9483b; /* sale price, low stock */
+  --danger: #b3261e; /* form errors */
+  --success: #2f5d3a;
+
+  /* Layout */
+  --gutter: 1.5rem; /* 24px page side padding on small screens */
+  --header-h: 3.125rem; /* 50px */
+  --grid-gap-x: 0.9375rem; /* 15px between product columns */
+  --grid-gap-y: 1.875rem; /* 30px between product rows */
+
+  /* Motion */
+  --ease-button: cubic-bezier(0.785, 0.135, 0.15, 0.86);
+  --ease-drawer: cubic-bezier(0.645, 0.045, 0.355, 1);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
+@media (min-width: 64rem) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --gutter: 4vw; /* proportional side padding on desktop */
+    --header-h: 3.75rem; /* 60px */
+    --grid-gap-x: 3.75rem; /* 60px */
+    --grid-gap-y: 3.75rem;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* ---- Tailwind theme (generates utilities) -------------------------------- */
+@theme inline {
+  /* Font variable comes from next/font in src/app/layout.tsx */
+  --font-sans: var(--font-sans-base), "Helvetica Neue", Arial, sans-serif;
+
+  /* bg-ink, text-muted, border-line, bg-surface, text-sale, ... */
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-paper: var(--paper);
+  --color-surface: var(--surface);
+  --color-muted: var(--muted);
+  --color-subtle: var(--subtle);
+  --color-line: var(--line);
+  --color-line-soft: var(--line-soft);
+  --color-line-field: var(--line-field);
+  --color-sale: var(--sale);
+  --color-danger: var(--danger);
+  --color-success: var(--success);
+  --color-background: var(--paper);
+  --color-foreground: var(--ink);
+
+  /* px-gutter, h-header, gap-x-grid, ... */
+  --spacing-gutter: var(--gutter);
+  --spacing-header: var(--header-h);
+  --spacing-grid-x: var(--grid-gap-x);
+  --spacing-grid-y: var(--grid-gap-y);
+
+  --ease-button: var(--ease-button);
+  --ease-drawer: var(--ease-drawer);
+}
+
+@theme {
+  /* Type scale: small and flat. Hierarchy comes from space and size, never weight. */
+  --text-xs: 0.6875rem; /* 11px – legal, badges */
+  --text-xs--line-height: 1.5;
+  --text-sm: 0.75rem; /* 12px – buttons, meta */
+  --text-sm--line-height: 1.5;
+  --text-base: 0.8125rem; /* 13px – product names, prices, nav */
+  --text-base--line-height: 1.65;
+  --text-md: 0.875rem; /* 14px – body copy */
+  --text-md--line-height: 1.65;
+  --text-lg: 1rem; /* 16px */
+  --text-lg--line-height: 1.5;
+  --text-xl: 1.25rem; /* 20px – page titles */
+  --text-xl--line-height: 1.35;
+  --text-2xl: clamp(1.375rem, 1.1rem + 0.9vw, 1.75rem); /* editorial headings */
+  --text-2xl--line-height: 1.25;
+  --text-display: clamp(1.75rem, 1rem + 3vw, 3.5rem); /* rare hero statements */
+  --text-display--line-height: 1.1;
+
+  --radius-none: 0;
+
+  /* aspect-product, aspect-landscape, aspect-hero ... */
+  --aspect-product: 3 / 4;
+  --aspect-landscape: 16 / 9;
+  --aspect-hero: 16 / 9;
+  --aspect-hero-mobile: 3 / 4;
+
+  /* max-w-content, max-w-narrow, max-w-prose-sm */
+  --container-content: 88.75rem; /* 1420px */
+  --container-narrow: 45rem; /* 720px – forms, editorial text */
+  --container-prose-sm: 32rem; /* 512px – short descriptions */
+}
+
+/* ---- Base ---------------------------------------------------------------- */
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-padding-top: var(--header-h);
+  }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-weight: 400;
+    font-size: var(--text-md);
+    line-height: var(--text-md--line-height);
+    letter-spacing: normal;
+  }
+
+  /* One weight everywhere: headings are distinguished by size and space */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  strong,
+  b {
+    font-weight: 400;
+  }
+
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  ::selection {
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  :focus-visible {
+    outline: 1px solid var(--ink);
+    outline-offset: 2px;
+  }
+
+  img,
+  video {
+    display: block;
+    max-width: 100%;
+  }
+}
+
+/* ---- Layout primitives --------------------------------------------------- */
+
+/* Full-width page with gutters (24px mobile, 4vw desktop) */
+@utility container-page {
+  width: 100%;
+  padding-inline: var(--gutter);
+}
+
+/* Capped content width for text-heavy pages, cart, checkout */
+@utility container-content {
+  width: 100%;
+  max-width: calc(var(--container-content) + var(--gutter) * 2);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+/* Narrow column for forms and editorial copy */
+@utility container-narrow {
+  width: 100%;
+  max-width: calc(var(--container-narrow) + var(--gutter) * 2);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+@utility full-bleed {
+  width: 100vw;
+  margin-inline: calc(50% - 50vw);
+}
+
+/* Section rhythm: 50px default, 90px / 120px for larger breaks */
+@utility section {
+  margin-block: 3.125rem;
+}
+@utility section-lg {
+  margin-block: 3.75rem;
+
+  @media (min-width: 64rem) {
+    margin-block: 5.625rem;
+  }
+}
+@utility section-xl {
+  margin-block: 5rem;
+
+  @media (min-width: 64rem) {
+    margin-block: 7.5rem;
+  }
+}
+
+@utility stack {
+  display: flex;
+  flex-direction: column;
+}
+
+@utility cluster {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+/* Product grid: 2 columns on small screens, 3 on tablet, 4 on desktop.
+   Gaps widen from 15/30px to 60px so each product gets air. */
+@utility grid-products {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: var(--grid-gap-x);
+  row-gap: var(--grid-gap-y);
+
+  @media (min-width: 48rem) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  @media (min-width: 64rem) {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* Two-up editorial grid (e.g. campaign pairs) */
+@utility grid-pair {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--grid-gap-y) var(--grid-gap-x);
+
+  @media (min-width: 48rem) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Image well. Pair with aspect-product / aspect-landscape. */
+@utility media {
+  position: relative;
+  overflow: hidden;
+  background: var(--surface);
+
+  & > img,
+  & > video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+/* Full-width hero: portrait on mobile, 16:9 on desktop. Header sits on top. */
+@utility media-hero {
+  position: relative;
+  overflow: hidden;
+  background: var(--surface);
+  aspect-ratio: var(--aspect-hero-mobile);
+
+  @media (min-width: 64rem) {
+    aspect-ratio: var(--aspect-hero);
+  }
+
+  & > img,
+  & > video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+/* Product card meta: name over price on small screens,
+   name left / price right from tablet up. Sits 12–20px below the image. */
+@utility product-meta {
+  display: flex;
+  flex-direction: column;
+  margin-top: 0.75rem;
+  font-size: var(--text-base);
+  line-height: var(--text-base--line-height);
+
+  @media (min-width: 48rem) {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+    margin-top: 1.25rem;
+  }
+}
+
+/* ---- Typography primitives ---------------------------------------------- */
+
+@utility heading-display {
+  font-size: var(--text-display);
+  line-height: var(--text-display--line-height);
+  letter-spacing: -0.01em;
+}
+
+@utility heading-page {
+  font-size: var(--text-xl);
+  line-height: var(--text-xl--line-height);
+}
+
+@utility heading-section {
+  font-size: var(--text-base);
+  line-height: var(--text-base--line-height);
+}
+
+@utility meta {
+  font-size: var(--text-sm);
+  line-height: var(--text-sm--line-height);
+  color: var(--muted);
+}
+
+@utility price {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* Uppercase is reserved for a text wordmark only */
+@utility wordmark {
+  font-size: 1.0625rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+/* ---- Buttons --------------------------------------------------------------
+   Square, 1px border, 12px sentence-case label, 14px x 28px padding.
+   Hover is a horizontal fill wipe rather than a color swap.
+   Compose: "btn btn-primary", "btn btn-secondary btn-block".
+   -------------------------------------------------------------------------- */
+@utility btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  padding: 0.875rem 1.75rem;
+  border: 1px solid transparent;
+  border-radius: 0;
+  font-size: var(--text-sm);
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  background-repeat: no-repeat;
+  background-image: linear-gradient(var(--ink), var(--ink));
+  transition:
+    color 0.45s var(--ease-button),
+    border-color 0.45s var(--ease-button),
+    background-size 0.45s var(--ease-button);
+
+  &:disabled,
+  &[aria-disabled="true"] {
+    cursor: not-allowed;
+    opacity: 0.4;
+  }
+}
+
+/* Primary: solid ink; fill retracts on hover leaving an outline */
+@utility btn-primary {
+  border-color: var(--ink);
+  color: var(--paper);
+  background-size: 100% 100%;
+  background-position: right center;
+
+  &:hover:not(:disabled) {
+    background-size: 0% 100%;
+    color: var(--ink);
+  }
+}
+
+/* Secondary: quiet grey outline; ink fills in from the left on hover */
+@utility btn-secondary {
+  border-color: color-mix(in srgb, var(--muted) 25%, transparent);
+  color: var(--muted);
+  background-size: 0% 100%;
+  background-position: left center;
+
+  &:hover:not(:disabled) {
+    background-size: 100% 100%;
+    border-color: var(--ink);
+    color: var(--paper);
+  }
+}
+
+/* Inverse: white on imagery */
+@utility btn-inverse {
+  border-color: var(--paper);
+  color: var(--ink);
+  background-image: linear-gradient(var(--paper), var(--paper));
+  background-size: 100% 100%;
+  background-position: right center;
+
+  &:hover:not(:disabled) {
+    background-size: 0% 100%;
+    color: var(--paper);
+  }
+}
+
+/* Text action: underlined, no box */
+@utility btn-text {
+  min-height: auto;
+  padding: 0;
+  border: 0;
+  background-image: none;
+  color: var(--ink);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-position: under;
+
+  &:hover:not(:disabled) {
+    color: var(--muted);
+  }
+}
+
+@utility btn-sm {
+  min-height: 1.875rem;
+  padding: 0.5rem 1rem;
+}
+
+@utility btn-block {
+  display: flex;
+  width: 100%;
+}
+
+@utility btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  color: inherit;
+  cursor: pointer;
+  transition: opacity 0.2s ease-in-out;
+
+  &:hover {
+    opacity: 0.6;
+  }
+}
+
+/* ---- Links --------------------------------------------------------------- */
+
+/* Inline link in copy: grey, soft underline, darkens on hover */
+@utility link {
+  color: var(--muted);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-decoration-color: color-mix(in srgb, currentColor 60%, transparent);
+  text-underline-position: under;
+  transition:
+    color 0.2s ease-in-out,
+    text-decoration-color 0.2s ease-in-out;
+
+  &:hover {
+    color: var(--ink);
+  }
+}
+
+/* Plain link: inherits color, no underline, dims on hover (product names, footer) */
+@utility link-plain {
+  color: inherit;
+  text-decoration: none;
+  transition: color 0.2s ease-in-out;
+
+  &:hover {
+    color: var(--muted);
+  }
+}
+
+/* Navigation link: 2px rule grows from the left on hover / current page */
+@utility link-nav {
+  position: relative;
+  display: inline-block;
+  padding-block: 0.25rem;
+  font-size: var(--text-base);
+  color: inherit;
+  text-decoration: none;
+  background-image: linear-gradient(currentColor, currentColor);
+  background-repeat: no-repeat;
+  background-position: left bottom;
+  background-size: 0% 2px;
+  transition: background-size 0.3s ease;
+
+  &:hover,
+  &[aria-current="page"] {
+    background-size: 100% 2px;
+  }
+}
+
+/* ---- Borders & form fields ----------------------------------------------- */
+
+/* Hairlines: use Tailwind border-t / border-b with border-line or border-line-soft */
+@utility divider {
+  height: 1px;
+  width: 100%;
+  border: 0;
+  background: var(--line);
+}
+
+/* Text input: underline only */
+@utility field {
+  display: block;
+  width: 100%;
+  padding: 0.625rem 0 0.3125rem;
+  border: 0;
+  border-bottom: 1px solid var(--line-field);
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink);
+  font-size: 1rem; /* 16px prevents iOS zoom on focus */
+  line-height: 1.2;
+  appearance: none;
+  transition: border-color 0.1s ease-in-out;
+
+  &::placeholder {
+    color: var(--subtle);
+  }
+
+  &:focus {
+    outline: none;
+    border-bottom-color: var(--ink);
+  }
+
+  &[aria-invalid="true"] {
+    border-bottom-color: var(--danger);
+  }
+
+  @media (min-width: 64rem) {
+    font-size: var(--text-base);
+  }
+}
+
+/* Selectable box (size chips, panels) */
+@utility boxed {
+  border: 1px solid var(--line);
+  border-radius: 0;
+}
+
+/* ---- Motion -------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
